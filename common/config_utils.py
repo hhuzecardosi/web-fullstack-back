@@ -15,3 +15,7 @@ def get_config_json(config_name):
             return json.load(f)
     except FileNotFoundError:
         return {}
+
+
+def get_db_credentials():
+    return get_config_json('globals')['mongo_db_uri']
