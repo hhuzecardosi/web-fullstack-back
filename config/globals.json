@@ -1,5 +1,6 @@
 {
-  "mongo_db_uri" : "mongodb://127.0.0.1:27017/",
-  "schedule_uri" : "https://balldontlie.io/api/v1/games?seasons[]=2022&seasons[]=2023&page=<<page>>&per_page=100",
-  "dbname" : "fantasy"
+  "mongo_db_uri": "mongodb://127.0.0.1:27017/",
+  "dbname": "fantasy",
+  "token_expiry": "24h",
+  "secret_key": "AAAAB3NzaC1yc2EAAAADAQABAAABAQDKaOrnz/7HvSIEKcZc+ZTKWu+WEuzyR73+aML3qmq2yH8EEluFTovp87KQ8NdtDrjMRSZqBebw/O45IKc2AMKTsz8kLgJGgm/zjujF5xpyiXI1vTQsEt0zqCy4ETFjWLj9WUogiX12K/U6nxH6qMDmUAbZweetFM/xczuUBTquyksG5eILJsjL9JYjo/rWs9WNTYDQQmnMC4zTcsN5NaFXhWcLmb+5cg2WwTfu2731Zj8kzYRzGgI4IwLW6quDJNGbU3MdIkd/VgAloI87+WHqHLUpq4Vmq4BA1flHSO38Uyt5bRXImPa53fyIta79vA+beHJPRfOpDRZVzFL3Ej17"
 }

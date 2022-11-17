@@ -1,6 +1,7 @@
 import bcrypt
 import jwt
 from pydash.objects import get, set_
+from bson import ObjectId
 
 from common.config_utils import get_config_json
 from database import database_connection
@@ -8,11 +9,11 @@ from database import database_connection
 
 def register(email, password, pseudo):
     try:
-        client_collection = database_connection.database_connection()['users']
-        user = client_collection.find_one({'email': email})
+        user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'email': email})
         if user:
             return {'context': 'user', 'method': 'create', 'error': 'EMAIL_ALREADY_USED', 'code': 400}
-        user = client_collection.find_one({'pseudo': pseudo})
+        user = user_collection.find_one({'pseudo': pseudo})
         if user:
             return {'context': 'user', 'method': 'create', 'error': 'PSEUDO_ALREADY_USED', 'code': 400}
         b_password = password.encode('utf-8')
@@ -24,7 +25,7 @@ def register(email, password, pseudo):
             'decks': [],
             'blacklist': []
         }
-        client_collection.insert_one(new_user)
+        user_collection.insert_one(new_user)
         return {'context': 'user', 'method': 'create', 'code': 201}
     except Exception as e:
         print(e)
@@ -33,8 +34,8 @@ def register(email, password, pseudo):
 
 def sign_in(email, password):
     try:
-        client_collection = database_connection.database_connection()['users']
-        user = client_collection.find_one({'email': email})
+        user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'email': email})
         if not user:
             return {'context': 'user', 'method': 'signin', 'error': 'UNAUTHORIZED', 'code': 401}
         b_password = str(password).encode('utf-8')
@@ -45,7 +46,9 @@ def sign_in(email, password):
         secret_key = get_config_json('globals')['secret_key']
         payload = {'user_email': user['email'], 'user_id': str(user['_id']), 'expiry': token_expiry}
         token = jwt.encode(payload=payload, key=secret_key)
-        data = {'token': token}
+        set_(user, 'password', '')
+        set_(user, '_id', str(user['_id']))
+        data = {'token': token, 'user': user}
         return {'context': 'user', 'method': 'signin', 'data': data, 'code': 200}
     except Exception as e:
         print(e)
@@ -55,7 +58,7 @@ def sign_in(email, password):
 def update(user, pseudo):
     try:
         client_collection = database_connection.database_connection()['users']
-        return {'data': '', 'code': 200}
+        return {'data': {}, 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'update', 'error': str(e), 'code': 500}
@@ -63,7 +66,7 @@ def update(user, pseudo):
 
 def update_password(user, old_password, new_password):
     try:
-        client_collection = database_connection.database_connection()['users']
+        user_collection = database_connection.database_connection()['users']
         return {'data': '', 'code': 200}
     except Exception as e:
         print(e)
@@ -72,8 +75,12 @@ def update_password(user, old_password, new_password):
 
 def get_profile(user):
     try:
-        client_collection = database_connection.database_connection()['users']
-        return {'data': '', 'code': 200}
+        user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'_id': ObjectId(user)})
+        if not user:
+            return {'context': 'user', 'method': 'get_profile', 'error': 'USER_NOT_FOUND', 'code': 404}
+        user['password'] = ''
+        return {'context': 'user', 'method': 'get_profile', 'data': user, 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_profile', 'error': str(e), 'code': 500}
@@ -81,7 +88,7 @@ def get_profile(user):
 
 def get_deck(user, from_, to):
     try:
-        client_collection = database_connection.database_connection()['users']
+        user_collection = database_connection.database_connection()['users']
         return {'data': '', 'code': 200}
     except Exception as e:
         print(e)
@@ -90,7 +97,7 @@ def get_deck(user, from_, to):
 
 def get_history(user):
     try:
-        client_collection = database_connection.database_connection()['users']
+        user_collection = database_connection.database_connection()['users']
         return {'data': '', 'code': 200}
     except Exception as e:
         print(e)
@@ -99,7 +106,7 @@ def get_history(user):
 
 def get_blacklist(user):
     try:
-        client_collection = database_connection.database_connection()['users']
+        user_collection = database_connection.database_connection()['users']
         return {'data': '', 'code': 200}
     except Exception as e:
         print(e)
