@@ -1,3 +1,12 @@
 nba_api
 pydash
 pymongo
+Flask~=1.1.2
+requests~=2.28.0
+markupsafe==2.0.1
+flask_restplus
+flask_cors
+Werkzeug==0.16.1
+openpyxl~=3.0.7
+PyJWT~=2.4.0
+unidecode

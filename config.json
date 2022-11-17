@@ -1,0 +1,33 @@
+{
+    "application": {
+      "DevelopmentConfig": {
+        "host": "localhost",
+        "port": "5004",
+        "name": "print"
+      }
+    },
+    "Logger": {
+      "version": 1,
+      "disable_existing_loggers": "True",
+      "formatters": {
+        "default": {
+          "format": "[%(asctime)s] [%(levelname)5s] [%(process)5s] [%(name)5s] %(message)s"
+        }
+      },
+      "handlers": {
+        "default": {
+          "level": "INFO",
+          "class": "logging.StreamHandler",
+          "formatter": "default"
+        }
+      },
+      "loggers": {
+        "": {
+          "handlers": [
+            "default"
+          ],
+          "level": "DEBUG"
+        }
+      }
+    }
+  }
