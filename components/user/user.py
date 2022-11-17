@@ -55,9 +55,13 @@ def sign_in(email, password):
         return {'context': 'user', 'method': 'signin', 'error': str(e), 'code': 500}
 
 
-def update(user, pseudo):
+def update(user, data):
     try:
-        client_collection = database_connection.database_connection()['users']
+        user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'_id': ObjectId(user)})
+        if not user:
+            return {'context': 'user', 'method': 'get_profile', 'error': 'USER_NOT_FOUND', 'code': 404}
+        user_collection.update_one({'_id': ObjectId(user)})
         return {'data': {}, 'code': 200}
     except Exception as e:
         print(e)

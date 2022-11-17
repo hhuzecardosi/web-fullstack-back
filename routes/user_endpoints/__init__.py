@@ -1,6 +1,6 @@
 from flask_restplus import Resource, Namespace, fields
 from flask import request, make_response
-from components.user.user import register, sign_in, get_profile
+from components.user.user import register, sign_in, get_profile, update
 from pydash.objects import get
 
 from jwt_check.jwt_check import token_required
@@ -14,6 +14,9 @@ user_model = ns_endpoint.model('user', {
     'pseudo': fields.String(),
     'decks': fields.String(),
     'blacklist': fields.String()
+})
+user_update_model = ns_endpoint.model('user_update', {
+    'pseudo': fields.String()
 })
 register_model = ns_endpoint.model('register', {
     'email': fields.String(required=True),
@@ -65,6 +68,19 @@ class User(Resource):
     def get(self, user_id):
         try:
             result = get_profile(user_id)
+            return make_response(result, result['code'])
+        except Exception as e:
+            print(e)
+            return make_response({'message': ''}, 500)
+
+    @token_required
+    @ns_user_endpoint.expect(user_update_model)
+    @ns_user_endpoint.response(200, 'Success')
+    @ns_user_endpoint.response(404, 'Not Found')
+    @ns_user_endpoint.response(500, 'Internal server error')
+    def put(self, user_id):
+        try:
+            result = update(user_id, request.json)
             return make_response(result, result['code'])
         except Exception as e:
             print(e)
