@@ -1,3 +1,5 @@
 {
-  "mongo_db_uri" : "mongodb://127.0.0.1:27017/"
+  "mongo_db_uri" : "mongodb://127.0.0.1:27017/",
+  "schedule_uri" : "https://balldontlie.io/api/v1/games?seasons[]=2022&seasons[]=2023&page=<<page>>&per_page=100",
+  "dbname" : "fantasy"
 }

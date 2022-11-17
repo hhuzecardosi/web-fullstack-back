@@ -1,16 +1,15 @@
-from common.config_utils import get_db_credentials
+from common.config_utils import get_db_credentials, get_db_name
 from pymongo import MongoClient
+import os
+import ssl
 
 
-class DbConnection:
-    """
-    Classe that handles interaction with mongo DB (connection, storage, retrieval)
-    """
-
-    def __init__(self):
-        full_uri = get_db_credentials()
-        try:
-            self.connection = MongoClient(full_uri)
-            print("MonogoDB connexion succeded to " + full_uri)
-        except Exception as err:
-            print("MonogoDB connexion failed. " + str(err))
+def database_connection():
+    try:
+        url = get_db_credentials()
+        client = MongoClient(url)
+        db = client[get_db_name()]
+        return db
+    except Exception as e:
+        print(e)
+        return -1

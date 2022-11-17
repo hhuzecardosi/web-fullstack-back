@@ -17,5 +17,19 @@ def get_config_json(config_name):
         return {}
 
 
+def get_file_from_path(path):
+    try:
+        json_file = os.path.join(os_utils.get_root_folder(), path)
+        with codecs.open(json_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+
 def get_db_credentials():
     return get_config_json('globals')['mongo_db_uri']
+
+
+def get_db_name():
+    return get_config_json('globals')['dbname']
+
