@@ -33,3 +33,6 @@ def get_db_credentials():
 def get_db_name():
     return get_config_json('globals')['dbname']
 
+
+def get_secret_key():
+    return get_config_json('globals')['secret_key']

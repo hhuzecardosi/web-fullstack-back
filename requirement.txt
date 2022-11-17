@@ -9,4 +9,5 @@ flask_cors
 Werkzeug==0.16.1
 openpyxl~=3.0.7
 PyJWT~=2.4.0
+bcrypt
 unidecode
