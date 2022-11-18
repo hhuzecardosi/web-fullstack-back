@@ -2,8 +2,10 @@ import bcrypt
 import jwt
 from pydash.objects import get, set_
 from bson import ObjectId
+from datetime import datetime
 
 from common.config_utils import get_config_json
+from common.utils import create_deck, difference_in_dates
 from database import database_connection
 
 
@@ -18,13 +20,9 @@ def register(email, password, pseudo):
             return {'context': 'user', 'method': 'create', 'error': 'PSEUDO_ALREADY_USED', 'code': 400}
         b_password = password.encode('utf-8')
         password = bcrypt.hashpw(b_password, bcrypt.gensalt())
-        new_user = {
-            'email': email,
-            'pseudo': pseudo,
-            'password': password,
-            'decks': [],
-            'blacklist': []
-        }
+        from_to = create_deck(datetime.now().strftime('%Y-%m-%d'))
+        deck = {'from': from_to['from'], 'to': from_to['to'], 'choices': []}
+        new_user = {'email': email, 'pseudo': pseudo, 'password': password, 'decks': [deck], 'blacklist': []}
         user_collection.insert_one(new_user)
         return {'context': 'user', 'method': 'create', 'code': 201}
     except Exception as e:
@@ -90,10 +88,22 @@ def get_profile(user):
         return {'context': 'user', 'method': 'get_profile', 'error': str(e), 'code': 500}
 
 
-def get_decks(user, from_, to):
+def get_deck(user_id):
     try:
         user_collection = database_connection.database_connection()['users']
-        return {'data': '', 'code': 200}
+        user = user_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return {'context': 'user', 'method': 'get_deck', 'error': 'USER_NOT_FOUND', 'code': 404}
+        string_date = datetime.now().strftime('%Y-%m-%d')
+        deck = create_deck(string_date)
+        deck_index = (i for i, deck in enumerate(get(user, 'decks', [])) if get(deck, 'from', '') == deck['from'] and
+                      get(deck, 'to', '') == deck['to'])
+        if deck_index == -1:
+            user_id['decks'].append(deck)
+            user_collection.update_one({'_id': user_id}, {'$set': user})
+            return {'context': 'user', 'method': 'get_deck', 'data': user['decks'][0], 'code': 200}
+        else:
+            return {'context': 'user', 'method': 'get_deck', 'data': get(user, 'decks.' + str(deck_index)), 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}
@@ -102,16 +112,34 @@ def get_decks(user, from_, to):
 def get_history(user):
     try:
         user_collection = database_connection.database_connection()['users']
-        return {'data': '', 'code': 200}
+        player_collection = database_connection.database_connection()['players']
+        user = user_collection.find_one({'_id': ObjectId(user)})
+        if not user:
+            return {'context': 'user', 'method': 'get_history', 'error': 'USER_NOT_FOUND', 'code': 404}
+        players = []
+        for deck in get(user, 'decks', []):
+            for choice in get(deck, 'choices', []):
+                date = datetime.strptime(datetime.now().strftime('%Y-%m-%d'), '%Y-%m-%d')
+                if difference_in_dates(choice['date'], date) < 0:
+                    player = player_collection.find_one({'_id': ObjectId(get(choice, 'player', ''))})
+                    if player:
+                        statistics = [stats for i, stats in enumerate(get(player, 'stats'))
+                                      if stats['date'] == get(choice, 'date')]
+                        players.append({'date': get(choice, 'date'), 'player_name': player['name'], 'stats': statistics,
+                                        'player_id': str(player['_id'])})
+        return {'context': 'user', 'method': 'get_history', 'data': players, 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_history', 'error': str(e), 'code': 500}
 
 
-def get_blacklist(user):
+def get_blacklist(user_id):
     try:
         user_collection = database_connection.database_connection()['users']
-        return {'data': '', 'code': 200}
+        user = user_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return {'context': 'user', 'method': 'get_blacklist', 'error': 'USER_NOT_FOUND', 'code': 404}
+        return {'context': 'user', 'method': 'get_blacklist', 'data': get(user, 'blacklist'), 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_blacklist', 'error': str(e), 'code': 500}
