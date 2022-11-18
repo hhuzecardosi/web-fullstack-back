@@ -90,7 +90,7 @@ def get_profile(user):
         return {'context': 'user', 'method': 'get_profile', 'error': str(e), 'code': 500}
 
 
-def get_deck(user, from_, to):
+def get_decks(user, from_, to):
     try:
         user_collection = database_connection.database_connection()['users']
         return {'data': '', 'code': 200}

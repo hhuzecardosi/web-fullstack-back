@@ -1,5 +1,6 @@
 from pydash.objects import get, set_
 
+
 def difference_in_dates(date1, date2):
     diff = date1 - date2
     return diff.total_seconds() / (60 * 60 * 24)
@@ -17,6 +18,7 @@ def compute_player_stats(player_collection, game, player):
             'assists': statistics['assists'],
             'rebounds': statistics['reboundsTotal'],
             'blocks': statistics['blocks'],
+            'steals': statistics['steals'],
             'ftm': statistics['freeThrowsMade'],
             'fgm': statistics['fieldGoalsMade'],
             'fg3m': statistics['threePointersMade'],
@@ -26,7 +28,7 @@ def compute_player_stats(player_collection, game, player):
             'turnovers': statistics['turnovers']
         }
         plus = db_stats['points'] + db_stats['assists'] + db_stats['rebounds'] \
-               + db_stats['blocks'] + db_stats['ftm'] + db_stats['fgm'] + db_stats['fg3m']
+               + db_stats['blocks'] + db_stats['ftm'] + db_stats['fgm'] + db_stats['fg3m'] + db_stats['steals']
         minus = (db_stats['fga'] - db_stats['fgm']) + (db_stats['fta'] - db_stats['ftm']) \
                 + (db_stats['fg3a'] - db_stats['fg3m'] + db_stats['turnovers'])
         db_stats['plus'] = plus
@@ -65,4 +67,3 @@ def get_all_path(path, object):
             sub_paths = get_all_path(key_path, object[key])
             paths.extend(sub_paths)
     return paths
-

@@ -26,6 +26,7 @@ def get_daily_update():
                     db_game['status'] = 'FINAL'
                     db_game['h_score'] = game['homeTeam']['score']
                     db_game['v_score'] = game['awayTeam']['score']
+                    print(db_game)
                     game_collection.update_one({'_id': db_game['_id']}, {'$set': db_game})
                     print('Game Done')
         print('DONE')
