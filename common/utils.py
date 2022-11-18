@@ -1,4 +1,5 @@
 from pydash.objects import get, set_
+from datetime import datetime, timedelta
 
 
 def difference_in_dates(date1, date2):
@@ -40,12 +41,10 @@ def compute_player_stats(player_collection, game, player):
     return False
 
 
-def update_changes(old_dict, new_dict):
-    paths = get_all_path('', old_dict)
-    for p in paths:
-        print(type(get(old_dict, p)))
-        # TODO check if values are the same (exception for the list, dict and date)
-    return True
+def create_deck(string_date):
+    date = datetime.strptime(string_date, '%Y-%m-%d')
+    day = date.weekday()
+    return {'from': date - timedelta(days=day), 'to': date + timedelta(days=(6 - day)), 'choices': []}
 
 
 def get_all_path(path, object):
