@@ -22,7 +22,7 @@ def register(email, password, pseudo):
         password = bcrypt.hashpw(b_password, bcrypt.gensalt())
         from_to = create_deck(datetime.now().strftime('%Y-%m-%d'))
         deck = {'from': from_to['from'], 'to': from_to['to'], 'choices': []}
-        new_user = {'email': email, 'pseudo': pseudo, 'password': password, 'decks': [deck], 'blacklist': []}
+        new_user = {'email': email, 'pseudo': pseudo, 'password': str(password), 'decks': [deck], 'blacklist': []}
         user_collection.insert_one(new_user)
         return {'context': 'user', 'method': 'create', 'code': 201}
     except Exception as e:
@@ -37,7 +37,7 @@ def sign_in(email, password):
         if not user:
             return {'context': 'user', 'method': 'signin', 'error': 'UNAUTHORIZED', 'code': 401}
         b_password = str(password).encode('utf-8')
-        if not bcrypt.checkpw(b_password, user['password']):
+        if not bcrypt.checkpw(b_password, user['password'].encode('utf-8')):
             return {'context': 'user', 'method': 'signin', 'error': 'UNAUTHORIZED', 'code': 401}
         # token creation
         token_expiry = get_config_json('globals')['token_expiry']
@@ -66,9 +66,19 @@ def update(user, data):
         return {'context': 'user', 'method': 'update', 'error': str(e), 'code': 500}
 
 
-def update_password(user, old_password, new_password):
+def update_password(user_id, old_password, new_password):
     try:
         user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return {'context': 'user', 'method': 'get_profile', 'error': 'USER_NOT_FOUND', 'code': 404}
+        b_password = str(old_password).encode('utf-8')
+        if not bcrypt.checkpw(b_password, user['password']):
+            return {'context': 'user', 'method': 'signin', 'error': 'WRONG_PASSWORD', 'code': 401}
+        b_password = new_password.encode('utf-8')
+        password = bcrypt.hashpw(b_password, bcrypt.gensalt())
+        set_(user, 'password', str(password))
+        user_collection.update_one({'_id': ObjectId(user_id)}, {'$set': user})
         return {'data': '', 'code': 200}
     except Exception as e:
         print(e)
