@@ -55,14 +55,15 @@ def pick_player(user_id, player_id, pick_date):
             return {'context': 'player', 'method': 'pick_player', 'error': 'PLAYER_IN_BLACKLIST', 'code': 400}
 
         deck = create_deck(pick_date)
-        deck_index = [i for i, deck in enumerate(get(user, 'decks', []))
-                      if get(deck, 'from', '') == deck['from'] and get(deck, 'to', '') == deck['to']][0]
+        deck_index = next((i for i, deck in enumerate(get(user, 'decks', []))
+                           if get(deck, 'from', '') == deck['from'] and get(deck, 'to', '') == deck['to']), -1)
 
         if deck_index == -1:
             user['decks'].append(deck)
             deck_index = 0
-        choice_index = [i for i, choice in enumerate(get(user, 'decks.' + str(deck_index) + '.choices', []))
-                        if get(choice, 'date') == date][0]
+
+        choice_index = next((i for i, choice in enumerate(get(user, 'decks.' + str(deck_index) + '.choices', []))
+                             if get(choice, 'date') == date), -1)
 
         if choice_index == -1:
             choice = {'date': date, 'player': ObjectId(player_id)}
@@ -74,8 +75,8 @@ def pick_player(user_id, player_id, pick_date):
             old_choice = get(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index))
             choice = {'date': date, 'player': ObjectId(player_id)}
             set_(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index), choice)
-            blacklist_index = [i for i, b in enumerate(get(user, 'blacklist', []))
-                               if old_choice['player'] == b['player']]
+            blacklist_index = next((i for i, b in enumerate(get(user, 'blacklist', []))
+                                    if old_choice['player'] == b['player']), -1)
             if blacklist_index == -1:
                 user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), player: ObjectId(player_id)})
             else:
