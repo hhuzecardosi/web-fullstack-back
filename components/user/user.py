@@ -105,12 +105,12 @@ def get_deck(user_id):
         if not user:
             return {'context': 'user', 'method': 'get_deck', 'error': 'USER_NOT_FOUND', 'code': 404}
         string_date = datetime.now().strftime('%Y-%m-%d')
-        deck = create_deck(string_date)
-        deck_index = next(
-            (i for i, deck in enumerate(get(user, 'decks', [])) if get(deck, 'from', '') == deck['from'] and
-             get(deck, 'to', '') == deck['to']), -1)
+        deck_ = create_deck(string_date)
+        deck_index = next((i for i, deck in enumerate(get(user, 'decks', []))
+                           if get(deck, 'from', '').strftime('%Y-%m-%d') == deck_['from'].strftime('%Y-%m-%d')
+                           and get(deck, 'to', '').strftime('%Y-%m-%d') == deck_['to'].strftime('%Y-%m-%d')), -1)
         if deck_index == -1:
-            user_id['decks'].append(deck)
+            user_id['decks'].append(deck_)
             user_collection.update_one({'_id': user_id}, {'$set': user})
             return {'context': 'user', 'method': 'get_deck', 'data': user['decks'][0], 'code': 200}
         else:
