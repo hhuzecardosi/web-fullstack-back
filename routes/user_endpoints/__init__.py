@@ -1,9 +1,10 @@
 from flask_restplus import Resource, Namespace, fields
 from flask import request, make_response
-from components.user.user import register, sign_in, get_profile, update, update_password
+from components.user.user import register, sign_in, get_profile, update, update_password, get_deck, get_blacklist, \
+    get_history
 from pydash.objects import get
 
-from jwt_check.jwt_check import token_required
+from jwt_check.jwt_check import token_required, decode_token
 
 ns_user_endpoint = Namespace('api/user')
 ns_endpoint = Namespace('api')
@@ -46,6 +47,7 @@ class Register(Resource):
             return make_response(result, result['code'])
         except Exception as e:
             print(e)
+            return make_response({'context': '', 'method': 'register', 'error': str(e), 'code': 500}, 500)
 
 
 @ns_endpoint.route('/signin')
@@ -61,6 +63,7 @@ class SignIn(Resource):
             return make_response(result, result['code'])
         except Exception as e:
             print(e)
+            return make_response({'context': '', 'method': 'signin', 'error': str(e), 'code': 500}, 500)
 
 
 @ns_user_endpoint.route('/<string:user_id>')
@@ -75,7 +78,7 @@ class User(Resource):
             return make_response(result, result['code'])
         except Exception as e:
             print(e)
-            return make_response({'message': ''}, 500)
+            return make_response({'context': 'user', 'method': 'get', 'error': str(e), 'code': 500}, 500)
 
     @token_required
     @ns_user_endpoint.expect(user_update_model)
@@ -88,7 +91,7 @@ class User(Resource):
             return make_response(result, result['code'])
         except Exception as e:
             print(e)
-            return make_response({'message': ''}, 500)
+            return make_response({'context': 'user', 'method': 'put', 'error': str(e), 'code': 500}, 500)
 
 
 @ns_user_endpoint.route('/password/<string:user_id>')
@@ -111,3 +114,51 @@ class UserPassword(Resource):
         except Exception as e:
             print(e)
             return make_response({'context': 'user', 'method': 'change_password', 'error': str(e), 'code': 500}, 500)
+
+
+@ns_user_endpoint.route('/deck')
+class Deck(Resource):
+    @token_required
+    @ns_user_endpoint.response(200, 'Success')
+    @ns_user_endpoint.response(404, 'User Not Found')
+    @ns_user_endpoint.response(500, 'Internal server error')
+    def get(self):
+        try:
+            token = decode_token(request.headers.get("Authorization"))
+            result = get_deck(get(token, 'user_id'))
+            return make_response(result, result['code'])
+        except Exception as e:
+            print(e)
+            return make_response({'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}, 500)
+
+
+@ns_user_endpoint.route('/history')
+class Deck(Resource):
+    @token_required
+    @ns_user_endpoint.response(200, 'Success')
+    @ns_user_endpoint.response(404, 'User Not Found')
+    @ns_user_endpoint.response(500, 'Internal server error')
+    def get(self):
+        try:
+            token = decode_token(request.headers.get("Authorization"))
+            result = get_history(get(token, 'user_id'))
+            return make_response(result, result['code'])
+        except Exception as e:
+            print(e)
+            return make_response({'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}, 500)
+
+
+@ns_user_endpoint.route('/blacklist')
+class Deck(Resource):
+    @token_required
+    @ns_user_endpoint.response(200, 'Success')
+    @ns_user_endpoint.response(404, 'User Not Found')
+    @ns_user_endpoint.response(500, 'Internal server error')
+    def get(self):
+        try:
+            token = decode_token(request.headers.get("Authorization"))
+            result = get_blacklist(get(token, 'user_id'))
+            return make_response(result, result['code'])
+        except Exception as e:
+            print(e)
+            return make_response({'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}, 500)

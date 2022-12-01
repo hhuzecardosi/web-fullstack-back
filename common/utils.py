@@ -60,3 +60,26 @@ def get_all_path(path, object):
             sub_paths = get_all_path(key_path, object[key])
             paths.extend(sub_paths)
     return paths
+
+
+def transform_deck_dates(decks):
+    transformed_deck = []
+    for deck in decks:
+        from_date = get(deck, 'from')
+        to_date = get(deck, 'to')
+        datetime.strftime()
+        d = {'from': from_date.strftime('%Y-%m-%d'), 'to': to_date.strftime('%Y-%m-%d'), 'choices': []}
+        for choice in get(deck, 'choices', []):
+            c = {'player': get(choice, 'player'), 'date': get(choice, 'date').strftime('%Y-%m-%d')}
+            d['choices'].append(c)
+        transformed_deck.append(d)
+    return transformed_deck
+
+
+def transform_blacklist_date(blacklist):
+    transformed_blacklist = []
+    for player in blacklist:
+        transformed_blacklist.append({'player': get(player, 'player'),
+                                      'since': get(player, 'since').strftime('%Y-%m-%d'),
+                                      'to': get(player, 'to').strftime('%Y-%m-%d')})
+    return transformed_blacklist

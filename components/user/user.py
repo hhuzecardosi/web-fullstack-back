@@ -5,7 +5,7 @@ from bson import ObjectId
 from datetime import datetime
 
 from common.config_utils import get_config_json
-from common.utils import create_deck, difference_in_dates
+from common.utils import create_deck, difference_in_dates, transform_deck_dates, transform_blacklist_date
 from database import database_connection
 
 
@@ -22,7 +22,7 @@ def register(email, password, pseudo):
         password = bcrypt.hashpw(b_password, bcrypt.gensalt())
         from_to = create_deck(datetime.now().strftime('%Y-%m-%d'))
         deck = {'from': from_to['from'], 'to': from_to['to'], 'choices': []}
-        new_user = {'email': email, 'pseudo': pseudo, 'password': str(password), 'decks': [deck], 'blacklist': []}
+        new_user = {'email': email, 'pseudo': pseudo, 'password': password, 'decks': [deck], 'blacklist': []}
         user_collection.insert_one(new_user)
         return {'context': 'user', 'method': 'create', 'code': 201}
     except Exception as e:
@@ -37,16 +37,15 @@ def sign_in(email, password):
         if not user:
             return {'context': 'user', 'method': 'signin', 'error': 'UNAUTHORIZED', 'code': 401}
         b_password = str(password).encode('utf-8')
-        if not bcrypt.checkpw(b_password, user['password'].encode('utf-8')):
+        if not bcrypt.checkpw(b_password, user['password']):
             return {'context': 'user', 'method': 'signin', 'error': 'UNAUTHORIZED', 'code': 401}
         # token creation
         token_expiry = get_config_json('globals')['token_expiry']
         secret_key = get_config_json('globals')['secret_key']
         payload = {'user_email': user['email'], 'user_id': str(user['_id']), 'expiry': token_expiry}
         token = jwt.encode(payload=payload, key=secret_key)
-        set_(user, 'password', '')
         set_(user, '_id', str(user['_id']))
-        data = {'token': token, 'user': user}
+        data = {'token': token, 'user': {'_id': user['_id'], 'email': user['email'], 'pseudo': user['pseudo']}}
         return {'context': 'user', 'method': 'signin', 'data': data, 'code': 200}
     except Exception as e:
         print(e)
@@ -92,6 +91,7 @@ def get_profile(user):
         if not user:
             return {'context': 'user', 'method': 'get_profile', 'error': 'USER_NOT_FOUND', 'code': 404}
         user['password'] = ''
+        user['_id'] = str(user['_id'])
         return {'context': 'user', 'method': 'get_profile', 'data': user, 'code': 200}
     except Exception as e:
         print(e)
@@ -106,14 +106,16 @@ def get_deck(user_id):
             return {'context': 'user', 'method': 'get_deck', 'error': 'USER_NOT_FOUND', 'code': 404}
         string_date = datetime.now().strftime('%Y-%m-%d')
         deck = create_deck(string_date)
-        deck_index = (i for i, deck in enumerate(get(user, 'decks', [])) if get(deck, 'from', '') == deck['from'] and
-                      get(deck, 'to', '') == deck['to'])
+        deck_index = next(
+            (i for i, deck in enumerate(get(user, 'decks', [])) if get(deck, 'from', '') == deck['from'] and
+             get(deck, 'to', '') == deck['to']), -1)
         if deck_index == -1:
             user_id['decks'].append(deck)
             user_collection.update_one({'_id': user_id}, {'$set': user})
             return {'context': 'user', 'method': 'get_deck', 'data': user['decks'][0], 'code': 200}
         else:
-            return {'context': 'user', 'method': 'get_deck', 'data': get(user, 'decks.' + str(deck_index)), 'code': 200}
+            return {'context': 'user', 'method': 'get_deck',
+                    'data': transform_deck_dates([get(user, 'decks.' + str(deck_index))]), 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}
@@ -149,7 +151,8 @@ def get_blacklist(user_id):
         user = user_collection.find_one({'_id': ObjectId(user_id)})
         if not user:
             return {'context': 'user', 'method': 'get_blacklist', 'error': 'USER_NOT_FOUND', 'code': 404}
-        return {'context': 'user', 'method': 'get_blacklist', 'data': get(user, 'blacklist'), 'code': 200}
+        return {'context': 'user', 'method': 'get_blacklist', 'data': transform_blacklist_date(get(user, 'blacklist')),
+                'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_blacklist', 'error': str(e), 'code': 500}

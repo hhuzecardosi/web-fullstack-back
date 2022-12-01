@@ -4,6 +4,7 @@ from pydash.objects import get, set_
 
 from database.database_connection import database_connection
 from common.utils import create_deck, difference_in_dates
+from components.nba.game import get_games_by_date
 
 
 def get_player(player_id):
@@ -22,18 +23,34 @@ def get_night_stats():
     try:
         player_collection = database_connection()['players']
         players = list(player_collection.find())
+        date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
         if len(players) == 0:
             return {'context': 'player', 'method': 'get_player', 'error': 'PLAYER_NOT_FOUND', 'code': 404}
+        games = get_games_by_date(date)
+        while get(games, 'error', '') == 'NO_GAME_FOUND':
+            print(date)
+            date = datetime.strptime(date, '%Y-%m-%d')
+            date = (date - timedelta(days=1)).strftime('%Y-%m-%d')
+            games = get_games_by_date(date)
+        # print(date)
         night_players = []
         for p in players:
-            date = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
-            date = datetime.strptime(date, '%Y-%m-%d')
-            statistics = [stats for i, stats in enumerate(get(p, 'stats')) if stats['date'] == date]
-            if len(statistics) > 0:
-                night_players.append({'_id': p['_id'], 'name': p['name'], 'stats': statistics[0]})
+            statistics = get_statistics_from_date(date, player=p)
+            if statistics:
+                night_players.append({'_id': p['_id'], 'name': p['name'], 'stats': statistics})
         return {'context': 'player', 'method': 'get_player', 'data': night_players, 'code': 200}
     except Exception as e:
         return {'context': 'player', 'method': 'get_player', 'error': str(e), 'code': 500}
+
+
+def get_statistics_from_date(string_date, player):
+    try:
+        date = datetime.strptime(string_date, '%Y-%m-%d')
+        statistics = next((stats for i, stats in enumerate(get(player, 'stats')) if stats['date'] == date), False)
+        return statistics
+    except Exception as e:
+        print(e)
+        return []
 
 
 def pick_player(user_id, player_id, pick_date):

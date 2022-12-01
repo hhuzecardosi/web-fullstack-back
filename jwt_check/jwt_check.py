@@ -28,3 +28,8 @@ def token_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+def decode_token(token):
+    token = token.split(" ")[1]
+    return jwt.decode(token, get_config_json('globals')['secret_key'], algorithms=['HS256'])
