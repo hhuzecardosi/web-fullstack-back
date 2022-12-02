@@ -1,5 +1,9 @@
+import json
+
+from bson import json_util
 from pydash.objects import get, set_
 from datetime import datetime, timedelta
+from database.database_connection import database_connection
 
 
 def difference_in_dates(date1, date2):
@@ -62,23 +66,32 @@ def get_all_path(path, object):
     return paths
 
 
-def transform_deck_dates(decks):
+def transform_deck_to_export(decks):
+    print('transform_deck_to_export')
+    player_collection = database_connection()['players']
     transformed_deck = []
     for deck in decks:
-        from_date = get(deck, 'from')
-        to_date = get(deck, 'to')
-        d = {'from': from_date.strftime('%Y-%m-%d'), 'to': to_date.strftime('%Y-%m-%d'), 'choices': []}
+        from_date = '' if get(deck, 'from', '') == '' else get(deck, 'from').strftime('%Y-%m-%d')
+        to_date = '' if get(deck, 'to', '') == '' else get(deck, 'to').strftime('%Y-%m-%d')
+        d = {'from': from_date, 'to': to_date, 'choices': []}
         for choice in get(deck, 'choices', []):
-            c = {'player': get(choice, 'player'), 'date': get(choice, 'date').strftime('%Y-%m-%d')}
+            player = player_collection.find_one({'_id': get(choice, 'player')})
+            player = {'name': get(player, 'name'), '_id': str(get(choice, 'player'))}
+            string_date = '' if get(choice, 'date', '') == '' else get(choice, 'date').strftime('%Y-%m-%d')
+            c = {'player': player, 'date': string_date}
             d['choices'].append(c)
         transformed_deck.append(d)
     return transformed_deck
 
 
-def transform_blacklist_date(blacklist):
+def transform_blacklist_to_export(blacklist):
+    print('blacklist')
+    player_collection = database_connection()['players']
     transformed_blacklist = []
-    for player in blacklist:
-        transformed_blacklist.append({'player': get(player, 'player'),
-                                      'since': get(player, 'since').strftime('%Y-%m-%d'),
-                                      'to': get(player, 'to').strftime('%Y-%m-%d')})
+    for blacklisted in blacklist:
+        player_db = player_collection.find_one({'_id': get(blacklisted, 'player')})
+        player_db = {'name': get(player_db, 'name'), '_id': str(get(blacklisted, 'player'))}
+        transformed_blacklist.append({'player': player_db,
+                                      'since': get(blacklisted, 'since').strftime('%Y-%m-%d'),
+                                      'to': get(blacklisted, 'to').strftime('%Y-%m-%d')})
     return transformed_blacklist

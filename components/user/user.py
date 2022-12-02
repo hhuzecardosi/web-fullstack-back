@@ -5,7 +5,7 @@ from bson import ObjectId
 from datetime import datetime
 
 from common.config_utils import get_config_json
-from common.utils import create_deck, difference_in_dates, transform_deck_dates, transform_blacklist_date
+from common.utils import create_deck, difference_in_dates, transform_deck_to_export, transform_blacklist_to_export
 from database import database_connection
 
 
@@ -92,6 +92,8 @@ def get_profile(user):
             return {'context': 'user', 'method': 'get_profile', 'error': 'USER_NOT_FOUND', 'code': 404}
         user['password'] = ''
         user['_id'] = str(user['_id'])
+        user['decks'] = transform_deck_to_export(user['decks'])
+        user['blacklist'] = transform_blacklist_to_export(user['blacklist'])
         return {'context': 'user', 'method': 'get_profile', 'data': user, 'code': 200}
     except Exception as e:
         print(e)
@@ -115,7 +117,7 @@ def get_deck(user_id):
             return {'context': 'user', 'method': 'get_deck', 'data': user['decks'][0], 'code': 200}
         else:
             return {'context': 'user', 'method': 'get_deck',
-                    'data': transform_deck_dates([get(user, 'decks.' + str(deck_index))]), 'code': 200}
+                    'data': transform_deck_to_export([get(user, 'decks.' + str(deck_index))]), 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_deck', 'error': str(e), 'code': 500}
@@ -137,7 +139,11 @@ def get_history(user):
                     if player:
                         statistics = [stats for i, stats in enumerate(get(player, 'stats'))
                                       if stats['date'] == get(choice, 'date')]
-                        players.append({'date': get(choice, 'date'), 'player_name': player['name'], 'stats': statistics,
+                        statistics = statistics[0]
+                        statistics['date'] = '' if get(statistics, 'date', '') == '' else \
+                            get(statistics, 'date').strftime('%Y-%m-%d')
+                        string_date = '' if get(choice, 'date', '') == '' else get(choice, 'date').strftime('%Y-%m-%d')
+                        players.append({'date': string_date, 'player_name': player['name'], 'stats': statistics,
                                         'player_id': str(player['_id'])})
         return {'context': 'user', 'method': 'get_history', 'data': players, 'code': 200}
     except Exception as e:
@@ -151,8 +157,8 @@ def get_blacklist(user_id):
         user = user_collection.find_one({'_id': ObjectId(user_id)})
         if not user:
             return {'context': 'user', 'method': 'get_blacklist', 'error': 'USER_NOT_FOUND', 'code': 404}
-        return {'context': 'user', 'method': 'get_blacklist', 'data': transform_blacklist_date(get(user, 'blacklist')),
-                'code': 200}
+        return {'context': 'user', 'method': 'get_blacklist',
+                'data': transform_blacklist_to_export(get(user, 'blacklist')), 'code': 200}
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_blacklist', 'error': str(e), 'code': 500}
