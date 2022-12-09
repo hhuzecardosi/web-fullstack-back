@@ -15,7 +15,7 @@ a = {
     ]
 }
 
-print(get_all_path('', a))
+# print(get_all_path('', a))
 
 b = {
     'list_in_list': [
@@ -24,4 +24,7 @@ b = {
         []
     ]
 }
-print(get_all_path('', b))
+# print(get_all_path('', b))
+
+
+print(type(ObjectId("637f7cc7e95b6228261ade0c")))

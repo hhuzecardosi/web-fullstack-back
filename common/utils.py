@@ -95,3 +95,12 @@ def transform_blacklist_to_export(blacklist):
                                       'since': get(blacklisted, 'since').strftime('%Y-%m-%d'),
                                       'to': get(blacklisted, 'to').strftime('%Y-%m-%d')})
     return transformed_blacklist
+
+
+def transform_games_to_export(data):
+    for game in data:
+        game['_id'] = str(game['_id'])
+        game['h_team'] = str(game['h_team']) if str(type(game['h_team'])) == "<class 'bson.objectid.ObjectId'>" else game['h_team']
+        game['v_team'] = str(game['v_team']) if str(type(game['v_team'])) == "<class 'bson.objectid.ObjectId'>" else game['v_team']
+        game['date'] = game['date'].strftime('%Y-%m-%d')
+    return data

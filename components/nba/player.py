@@ -37,7 +37,7 @@ def get_night_stats():
         for p in players:
             statistics = get_statistics_from_date(date, player=p)
             if statistics:
-                night_players.append({'_id': p['_id'], 'name': p['name'], 'stats': statistics})
+                night_players.append({'_id': str(p['_id']), 'name': p['name'], 'stats': statistics})
         return {'context': 'player', 'method': 'get_player', 'data': night_players, 'code': 200}
     except Exception as e:
         return {'context': 'player', 'method': 'get_player', 'error': str(e), 'code': 500}
@@ -46,7 +46,9 @@ def get_night_stats():
 def get_statistics_from_date(string_date, player):
     try:
         date = datetime.strptime(string_date, '%Y-%m-%d')
-        statistics = next((stats for i, stats in enumerate(get(player, 'stats')) if stats['date'] == date), False)
+        statistics = next((stats for i, stats in enumerate(get(player, 'stats')) if stats['date'] == date), None)
+        if statistics:
+            statistics['date'] = '' if get(statistics, 'date', '') == '' else get(statistics, 'date').strftime('%Y-%m-%d')
         return statistics
     except Exception as e:
         print(e)
@@ -56,8 +58,9 @@ def get_statistics_from_date(string_date, player):
 def pick_player(user_id, player_id, pick_date):
     try:
         date = datetime.strptime(pick_date, '%Y-%m-%d')
-        # if difference_in_dates(date, datetime.now()) < 0:
-            # return {'context': 'player', 'method': 'pick_player', 'error': 'DATE_PASSED', 'code': 400}
+        print(difference_in_dates(date, datetime.now()))
+        if difference_in_dates(date, datetime.now()) < 0:
+            return {'context': 'player', 'method': 'pick_player', 'error': 'DATE_PASSED', 'code': 400}
         user_collection = database_connection()['users']
         player_collection = database_connection()['players']
         user = user_collection.find_one({'_id': ObjectId(user_id)})
@@ -93,10 +96,14 @@ def pick_player(user_id, player_id, pick_date):
             user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), 'player': ObjectId(player_id)})
         else:
             old_choice = get(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index))
+            print('old_choice', old_choice)
             choice = {'date': date, 'player': ObjectId(player_id)}
+            print('choice', choice)
             set_(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index), choice)
+            print('choice 2', choice)
             blacklist_index = next((i for i, b in enumerate(get(user, 'blacklist', []))
                                     if old_choice['player'] == b['player']), -1)
+            print('blacklist_index', blacklist_index)
             if blacklist_index == -1:
                 user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), player: ObjectId(player_id)})
             else:
