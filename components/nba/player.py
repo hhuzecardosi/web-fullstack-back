@@ -5,6 +5,7 @@ from pydash.objects import get, set_
 from database.database_connection import database_connection
 from common.utils import create_deck, difference_in_dates, transform_deck_to_export, transform_blacklist_to_export
 from components.nba.game import get_games_by_date
+from components.user.user import update_blacklist
 
 
 def get_player(player_id):
@@ -58,8 +59,8 @@ def get_statistics_from_date(string_date, player):
 def pick_player(user_id, player_id, pick_date):
     try:
         date = datetime.strptime(pick_date, '%Y-%m-%d')
-        print(difference_in_dates(date, datetime.now()))
-        if difference_in_dates(date, datetime.now()) < 0:
+        update_blacklist(user_id)
+        if difference_in_dates(date, datetime.now()) < -1:
             return {'context': 'player', 'method': 'pick_player', 'error': 'DATE_PASSED', 'code': 400}
         user_collection = database_connection()['users']
         player_collection = database_connection()['players']
@@ -72,14 +73,12 @@ def pick_player(user_id, player_id, pick_date):
 
         blacklist_index = next((i for i, blacklist in enumerate(get(user, 'blacklist', []))
                                 if get(blacklist, 'player') == player['_id']), -1)
-        print(blacklist_index)
         if blacklist_index >= 0:
             return {'context': 'player', 'method': 'pick_player', 'error': 'PLAYER_IN_BLACKLIST', 'code': 400}
 
         deck_ = create_deck(pick_date)
         deck_index = next((i for i, deck in enumerate(get(user, 'decks', []))
                            if get(deck, 'from', '') == deck_['from'] and get(deck, 'to', '') == deck_['to']), -1)
-        print('deck_index', deck_index)
         if deck_index == -1:
             user['decks'].append(deck_)
             deck_index = 0
@@ -87,7 +86,6 @@ def pick_player(user_id, player_id, pick_date):
         choice_index = next((i for i, choice in enumerate(get(user, 'decks.' + str(deck_index) + '.choices', []))
                              if get(choice, 'date') == date), -1)
 
-        print('choice_index', choice_index)
         if choice_index == -1:
             choice = {'date': date, 'player': ObjectId(player_id)}
             deck = get(user, 'decks.' + str(deck_index))
@@ -96,22 +94,17 @@ def pick_player(user_id, player_id, pick_date):
             user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), 'player': ObjectId(player_id)})
         else:
             old_choice = get(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index))
-            print('old_choice', old_choice)
             choice = {'date': date, 'player': ObjectId(player_id)}
-            print('choice', choice)
             set_(user, 'decks.' + str(deck_index) + '.choices.' + str(choice_index), choice)
-            print('choice 2', choice)
             blacklist_index = next((i for i, b in enumerate(get(user, 'blacklist', []))
                                     if old_choice['player'] == b['player']), -1)
-            print('blacklist_index', blacklist_index)
             if blacklist_index == -1:
-                user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), player: ObjectId(player_id)})
+                user['blacklist'].append({'since': date, 'to': date + timedelta(days=7), 'player': ObjectId(player_id)})
             else:
                 set_(user, 'blacklist.' + str(blacklist_index),
-                     {'since': date, 'to': date + timedelta(days=7), player: ObjectId(player_id)})
+                     {'since': date, 'to': date + timedelta(days=7), 'player': ObjectId(player_id)})
 
         user_collection.update_one({'_id': ObjectId(user_id)}, {"$set": user})
-        print('decks', get(user, 'decks.' + str(deck_index)))
         data = {'deck': transform_deck_to_export([get(user, 'decks.' + str(deck_index), [])]),
                 'blacklist': transform_blacklist_to_export(get(user, 'blacklist', []))}
         return {'context': 'player', 'method': 'pick_player', 'data': data, 'code': 200}

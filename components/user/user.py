@@ -125,6 +125,7 @@ def get_deck(user_id):
 
 def get_history(user):
     try:
+        print('Get History\n')
         user_collection = database_connection.database_connection()['users']
         player_collection = database_connection.database_connection()['players']
         user = user_collection.find_one({'_id': ObjectId(user)})
@@ -139,9 +140,10 @@ def get_history(user):
                     if player:
                         statistics = [stats for i, stats in enumerate(get(player, 'stats'))
                                       if stats['date'] == get(choice, 'date')]
-                        statistics = statistics[0]
-                        statistics['date'] = '' if get(statistics, 'date', '') == '' else \
-                            get(statistics, 'date').strftime('%Y-%m-%d')
+                        if len(statistics) > 0:
+                            statistics = statistics[0]
+                            statistics['date'] = '' if get(statistics, 'date', '') == '' else \
+                                get(statistics, 'date').strftime('%Y-%m-%d')
                         string_date = '' if get(choice, 'date', '') == '' else get(choice, 'date').strftime('%Y-%m-%d')
                         players.append({'date': string_date, 'player_name': player['name'], 'stats': statistics,
                                         'player_id': str(player['_id'])})
@@ -162,3 +164,22 @@ def get_blacklist(user_id):
     except Exception as e:
         print(e)
         return {'context': 'user', 'method': 'get_blacklist', 'error': str(e), 'code': 500}
+
+
+def update_blacklist(user_id):
+    try:
+        user_collection = database_connection.database_connection()['users']
+        user = user_collection.find_one({'_id': ObjectId(user_id)})
+        if not user:
+            return {'context': 'user', 'method': 'update_blacklist', 'error': 'USER_NOT_FOUND', 'code': 404}
+        blacklist = get(user, 'blacklist')
+        new_blacklist = []
+        for player in blacklist:
+            date = get(player, 'to')
+            if difference_in_dates(date, datetime.now()) > 0:
+                new_blacklist.append(player)
+        set_(user, 'blacklist', new_blacklist)
+        user_collection.update_one({'_id': ObjectId(user_id)}, {"$set": user})
+    except Exception as e:
+        print(e)
+        return {'context': 'user', 'method': 'update_blacklist', 'error': str(e), 'code': 500}

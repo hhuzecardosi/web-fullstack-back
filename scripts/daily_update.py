@@ -9,7 +9,6 @@ from common.utils import difference_in_dates, compute_player_stats, create_deck
 
 def daily_update(string_date):
     try:
-        print('\nDaily Update ', string_date)
         player_collection = database_connection()['players']
         team_collection = database_connection()['teams']
         game_collection = database_connection()['games']
@@ -44,11 +43,6 @@ def daily_update(string_date):
             set_(user, 'blacklist', blacklist)
             user_collection.update_one({'_id': user['_id']}, {'$set': user})
 
-        # print('choices', len(choices))
-
-        # Players & Games update
-        # print('Players & Games')
-        # print('Games', games)
         for game in games:
             players = boxscore.BoxScore(get(game, 'external_id')).get_dict()
             get(players, 'game.homeTeam.players', [])
@@ -59,7 +53,7 @@ def daily_update(string_date):
             game['status'] = 'FINAL'
             game['h_score'] = players['game']['homeTeam']['score']
             game['v_score'] = players['game']['awayTeam']['score']
-            # print('Game : ', game)
+
             game_collection.update_one({'_id': game['_id']}, {'$set': game})
         return True
     except Exception as e:
@@ -70,7 +64,7 @@ def daily_update(string_date):
 def update_players(player_collection, team_collection, string_date, players, game, choices, team_external_id):
     try:
         for player in players:
-            print(player['name'])
+            # print(player['name'])
             db_player = player_collection.find_one({'external_id': get(player, 'personId')})
             if not db_player:
                 print('Player not in database')

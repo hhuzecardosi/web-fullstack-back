@@ -141,15 +141,26 @@ def populate_players_collection():
         if len(players) > 0:
             player_collection.insert_many(players)
 
-        # for team in teams:
-        #     _id = team['_id']
-        #     team_players = list(player_collection.find({'team': _id}))
-        #     for player in team_players:
-        #         if player['_id'] not in team['players']:
-        #             team['players'].append(player['_id'])
-        #     team_collection.update_one({'_id': _id}, {'$set': team})
-
         return {'players': len(list(player_collection.find()))}
+    except Exception as e:
+        print(e)
+        return False
+
+
+def populate_players_in_teams():
+    try:
+        team_collection = database_connection()['teams']
+        player_collection = database_connection()['players']
+        teams = team_collection.find()
+        for team in teams:
+            _id = team['_id']
+            team_players = list(player_collection.find({'team': _id}))
+            for player in team_players:
+                if player['_id'] not in team['players']:
+                    team['players'].append(player['_id'])
+            team_collection.update_one({'_id': _id}, {'$set': team})
+            print(team['name'])
+        return True
     except Exception as e:
         print(e)
         return False
@@ -162,19 +173,23 @@ def populate_games_collection():
         team_collection = database_connection()['teams']
         nba_schedule = get_file_from_path('config/nba_schedule.json')
         games = []
-        print(nba_schedule)
+        # print(nba_schedule)
         for game in nba_schedule['games']:
+            print(game)
             external_id = game['external_id']
             db_game = game_collection.find_one({'external_id': external_id})
-            print(db_game)
+            print('db_game', db_game)
             if not db_game:
                 date = datetime.strptime(str(game['date']).split(' ')[0], '%m/%d/%Y')
                 h_team = team_collection.find_one({'external_id': game['h_team']})
                 v_team = team_collection.find_one({'external_id': game['v_team']})
-                games.append({'external_id': external_id, 'date': date, 'h_team': h_team['_id'], 'v_team': v_team['_id']})
+                print(date, h_team, v_team)
+                games.append({'external_id': external_id, 'date': date, 'h_team': get(h_team, '_id', game['h_team']),
+                              'v_team': get(v_team, '_id', game['v_team'])})
+                print('BD Updated')
         if len(games) > 0:
             game_collection.insert_many(games)
-        return len(list(game_collection.find()))
+        return True
     except Exception as e:
         print(e)
         return False
@@ -191,6 +206,7 @@ def populate_stats():
                 break
             string_date = date.strftime('%Y-%m-%d')
             daily_update(string_date)
+            print(string_date)
         return True
     except Exception as e:
         print(e)
